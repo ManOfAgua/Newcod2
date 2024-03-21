@@ -1,12 +1,9 @@
 package frc.robot;
 
-import java.util.Optional;
-import java.util.function.Supplier;
+import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
+import static frc.robot.Constants.VisionConstants.ROBOT_TO_CAMERA_TRANSFORMS;
 
-import org.photonvision.EstimatedRobotPose;
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import java.util.function.Supplier;
 
 // import static edu.wpi.first.units.Units.*;
 // import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -30,20 +27,9 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.estimator.PoseEstimator;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
+
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -65,8 +51,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     private final SwerveRequest.ApplyChassisSpeeds autoRequest = new SwerveRequest.ApplyChassisSpeeds();
     Pigeon2 gyro = new Pigeon2(IDConstants.gyro);
-    SwerveDrivePoseEstimator m_SwerveDrivePoseEstimator;
-    Vision vision = new Vision();
+
+    private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, ROBOT_TO_CAMERA_TRANSFORMS,
+            this::addVisionMeasurement, () -> getState().Pose));
 
     private PIDConstants drivePID = new PIDConstants(AutonConstants.drivekP, AutonConstants.drivekI,
             AutonConstants.drivekD);
@@ -80,9 +67,12 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         configurePathPlanner();
         driveLimit();
         azimuthLimit();
-        visionposeEstimation();
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyroYaw();
+        photonThread.setName("PhotonVision");
+        photonThread.setDaemon(true);
+        photonThread.start();
+
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -94,9 +84,12 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         configurePathPlanner();
         driveLimit();
         azimuthLimit();
-        visionposeEstimation();
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyroYaw();
+        photonThread.setName("PhotonVision");
+        photonThread.setDaemon(true);
+        photonThread.start();
+
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -120,25 +113,12 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                         TunerConstants.kSpeedAt12VoltsMps,
                         driveBaseRadius,
                         new ReplanningConfig()),
-                () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+                () -> DriverStation.getAlliance().map(alliance -> alliance == DriverStation.Alliance.Red).orElse(false),
                 this); // Subsystem for requirements
     }
 
     public ChassisSpeeds getCurrentRobotChassisSpeeds() {
         return m_kinematics.toChassisSpeeds(getState().ModuleStates);
-    }
-
-    public void visionposeEstimation() {
-        var stateStdDevs = VecBuilder.fill(0.1, 0.1, 0.1);
-        var visionStdDevs = VecBuilder.fill(1, 1, 1);
-
-        m_SwerveDrivePoseEstimator = new SwerveDrivePoseEstimator(
-                m_kinematics,
-                getGyroRotation(),
-                m_modulePositions,
-                new Pose2d(),
-                stateStdDevs,
-                visionStdDevs);
     }
 
     public void driveLimit() {
@@ -171,10 +151,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     public double getGyroYaw() {
         return gyro.getYaw().getValueAsDouble();
-    }
-
-    public Rotation2d getGyroRotation(){
-         return gyro.getRotation2d();
     }
 
     public void zeroGyroYaw() {
@@ -253,18 +229,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     @Override
     public void periodic() {
-        // m_SwerveDrivePoseEstimator.update(getGyroRotation(), m_modulePositions);
-
-        // var visionEst = vision.getEstimatedGlobalPose();
-        // visionEst.ifPresent(
-        //         est -> {
-        //             var estPose = est.estimatedPose.toPose2d();
-        //             // Change our trust in the measurement based on the tags we can see
-        //             var estStdDevs = vision.getEstimationStdDevs(estPose);
-    
-        //             addVisionMeasurement(
-        //                     est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs);
-        //         });
 
         SmartDashboard.putNumber("Gyro Angle", getGyroYaw());
         SmartDashboard.putNumber("X Pose", this.getState().Pose.getX());

@@ -1,19 +1,16 @@
 package frc.robot;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+
+import static edu.wpi.first.math.util.Units.degreesToRadians;
+import static edu.wpi.first.math.util.Units.inchesToMeters;
+import static edu.wpi.first.units.Units.Meters;
 
 public class Constants {
 
@@ -60,7 +57,7 @@ public class Constants {
                 public static final int leftarmID = 9, rightarmID = 8;
 
                 public static double armSpd = 0.40,
-                                armKP = 0.02, armKI = 0.001, armKD = 0.003,
+                                armKP = 0.01, armKI = 0.001, armKD = 0.0001,
 
                                 kArmGearRatio = 36.66, kCountsPerRev = 2048,
                                 kArmScaleFactor = (360 / (243.316601563 / (kCountsPerRev * kArmGearRatio)));
@@ -70,39 +67,45 @@ public class Constants {
                 public static double drivekP = 0.5,
                                 drivekI = 0.0,
                                 drivekD = 0.1,
-                                // 29/64 nick took
+
                                 steerkP = 0.5,
                                 steerkI = 0.0,
                                 steerkD = 0.1;
         }
 
-        public static final class VisionConstants {
-                public static final String APRILTAG_CAMERA_NAME = "PhotonCamera";
-
-                public static final AprilTagFieldLayout m_aprilTagFieldLayout = AprilTagFields.k2024Crescendo
-                                .loadAprilTagLayoutField();
-
-                public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8);
-                public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
+        public static class VisionConstants {
+                /**
+                 * Array of PhotonVision camera names. The values here match
+                 * ROBOT_TO_CAMERA_TRANSFORMS for the camera's location.
+                 */
+                public static final String[] APRILTAG_CAMERA_NAME = { "PhotonCamera" };
 
                 /**
-                 * Physical location of the apriltag camera on the robot, relative to the center
-                 * of the robot.
+                 * Physical location of the apriltag cameras on the robot, relative to the
+                 * center of the robot.
+                 * The values here math APRILTAG_CAMERA_NAME for the camera's name.
                  */
-                public static final Transform3d APRILTAG_CAMERA_TO_ROBOT = new Transform3d(
-                                new Translation3d(-0.06, 0.2, -0.2127),
-                                new Rotation3d(0.0, Units.degreesToRadians(15.0), Units.degreesToRadians(-3.0)));
+                public static final Transform3d[] ROBOT_TO_CAMERA_TRANSFORMS = {
+                                new Transform3d(
+                                                new Translation3d(inchesToMeters(14), inchesToMeters(14),
+                                                                inchesToMeters(7.75)),
+                                                new Rotation3d(0, degreesToRadians(0), degreesToRadians(0))),
+                                new Transform3d(
+                                                new Translation3d(inchesToMeters(7.678), inchesToMeters(12.333),
+                                                                inchesToMeters(10.619)),
+                                                new Rotation3d(degreesToRadians(-0.25), degreesToRadians(-25),
+                                                                degreesToRadians(0)))
+                };
 
-                public static final double FIELD_LENGTH_METERS = 16.54175;
-                public static final double FIELD_WIDTH_METERS = 8.0137;
+                public static final Measure<Distance> FIELD_LENGTH = Meters.of(16.54175);
+                public static final Measure<Distance> FIELD_WIDTH = Meters.of(8.0137);
 
-                /** Minimum target ambiguity. Targets with higher ambiguity will be discarded */
+                /**
+                 * Minimum target ambiguity. Targets with higher ambiguity will be discarded.
+                 * Not appliable when multiple tags are
+                 * in view in a single camera.
+                 */
                 public static final double APRILTAG_AMBIGUITY_THRESHOLD = 0.2;
-
-                public static final Pose2d FLIPPING_POSE = new Pose2d(
-                                new Translation2d(FIELD_LENGTH_METERS, FIELD_WIDTH_METERS),
-                                new Rotation2d(Math.PI));
-
         }
 
         public static final SwerveDriveKinematics KINEMATICS = new SwerveDriveKinematics(

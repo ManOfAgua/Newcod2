@@ -4,47 +4,39 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.subsystems.Arm;
 
-public class ArmPIDCommand extends Command {
+public class PhotonCommand extends Command {
 
-  private final Arm armSub;
-  private final PIDController armPID;
-  private final double goal;
-  private boolean done;
+private final Arm armSub;
+private final PIDController armPID;
+private boolean done;
 
-  public ArmPIDCommand(double setPoint, Arm arm) {
+  public PhotonCommand(Arm arm) {
     this.armSub = arm;
-    this.goal = setPoint;
     this.armPID = new PIDController(ArmConstants.armKP, ArmConstants.armKI, ArmConstants.armKD);
     
-
     addRequirements(armSub);
   }
 
   @Override
   public void initialize() {
-    armPID.setSetpoint(goal);
+    armPID.setSetpoint(armSub.calculateAngle());
     armPID.reset();
     System.out.println("\n\nArm PID Command Has Started\n\n");
     armPID.setTolerance(0.25);
   }
 
   // Called every time the scheduler runs while the command is scheduled.
-
   @Override
   public void execute() {
-    done = armPID.atSetpoint();
-
-    double speed = armPID.calculate(armSub.armTickToDegrees(), goal);
-
+        done = armPID.atSetpoint();
+    
+    double speed = armPID.calculate(armSub.armTickToDegrees(), armSub.calculateAngle());
     armSub.move(-speed);
 
     SmartDashboard.putBoolean("Arm Tolerance Check", armPID.atSetpoint());

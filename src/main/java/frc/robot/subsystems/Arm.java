@@ -4,8 +4,11 @@
 
 package frc.robot.subsystems;
 
+import java.util.Optional;
+
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonUtils;
+import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -14,20 +17,17 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.Voltage;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.CommandSwerveDrivetrain;
 import frc.robot.Constants.ArmConstants;
-import frc.robot.Util.ModifiedSignalLogger;
 
 public class Arm extends SubsystemBase {
-
   TalonFX leftArm = new TalonFX(ArmConstants.leftarmID);
   TalonFX rightArm = new TalonFX(ArmConstants.rightarmID);
   PhotonCamera photonCamera = new PhotonCamera("PhotonCamera");
@@ -35,11 +35,12 @@ public class Arm extends SubsystemBase {
   CommandSwerveDrivetrain m_driveTrain;
   private final double camera_Height = Units.inchesToMeters(10);
   private final double target_Height = Units.inchesToMeters(56.125); // Distance from floor to the middle of april tag
-  private AprilTagFieldLayout aprilTagLayout;
+  private AprilTagFieldLayout aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+    private final ShuffleboardTab driverTab = Shuffleboard.getTab("Driver");
+
 
   private final double vertoffSet = Units.inchesToMeters(24.3125); // 80.4375 height of middle of speaker opening..
                                                                    // 80.4375-56.125=24.3125
-  private Voltage volts2;
 
   public Arm(CommandSwerveDrivetrain driveTrain) {
     brakeMode();
@@ -84,35 +85,47 @@ public class Arm extends SubsystemBase {
     rightArm.setNeutralMode(NeutralModeValue.Brake);
   }
 
-  // public double calculateAngle() {
-  //   double poseX = m_driveTrain.getState().Pose.getX();
-  //   double poseY = m_driveTrain.getState().Pose.getY();
+  public double calculateAngle() {
+    var result = photonCamera.getLatestResult();
+    PhotonTrackedTarget target = result.getBestTarget();
 
-  //   double armAngle = Math.atan(target_Height-camera_Height)/poseX;
+    if (target == null) {
+      return armTickToDegrees();
+    }
 
-  //   return armAngle;
-  // }
+    int targetID = target.getFiducialId();
+    if (targetID == 7 || targetID == 4) {
+      double horizontal = PhotonUtils.getDistanceToPose(m_driveTrain.getState().Pose,
+          aprilTagLayout.getTagPose(targetID).get().toPose2d());
+
+      double angle = Math.atan(((target_Height - camera_Height) + (vertoffSet)) / (horizontal));
+      return Units.radiansToDegrees(angle);
+    }
+    return armTickToDegrees();
+  }
 
   // private SysIdRoutine m_armSysIdRoutine = new SysIdRoutine(
-  //     new SysIdRoutine.Config(null, null, null,
-  //         ModifiedSignalLogger.logState()),
-  //     new SysIdRoutine.Mechanism(
-  //         (Measure<Voltage> volts) -> leftArm.setVoltage(volts.in(volts2)),
-  //         null,
-  //         this));
+  // new SysIdRoutine.Config(null, null, null,
+  // ModifiedSignalLogger.logState()),
+  // new SysIdRoutine.Mechanism(
+  // (Measure<Voltage> volts) -> leftArm.setVoltage(volts.in(volts2)),
+  // null,
+  // this));
 
   // public Command runArmQuasiTest(SysIdRoutine.Direction direction) {
-  //   return m_armSysIdRoutine.quasistatic(direction);
+  // return m_armSysIdRoutine.quasistatic(direction);
   // }
 
   // public Command runArmDynamTest(SysIdRoutine.Direction direction) {
-  //   return m_armSysIdRoutine.dynamic(direction);
+  // return m_armSysIdRoutine.dynamic(direction);
   // }
 
   @Override
   public void periodic() {
 
     SmartDashboard.putNumber("Arm Angle", armTickToDegrees());
+    SmartDashboard.putNumber("Calculated Arm Angle", calculateAngle());
+
     // SmartDashboard.putNumber("Photon Angle", calculateAngle());
 
     // Test 1: -121.3916015625
