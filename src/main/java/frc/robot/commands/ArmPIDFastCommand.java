@@ -13,17 +13,17 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.subsystems.Arm;
 
-public class ArmPIDCommand extends Command {
+public class ArmPIDFastCommand extends Command {
 
   private final Arm armSub;
   private final PIDController armPID;
   private final double goal;
   private boolean done;
 
-  public ArmPIDCommand(double setPoint, Arm arm) {
+  public ArmPIDFastCommand(double setPoint, Arm arm) {
     this.armSub = arm;
     this.goal = setPoint;
-    this.armPID = new PIDController(ArmConstants.armKP, ArmConstants.armKI, ArmConstants.armKD);
+    this.armPID = new PIDController(ArmConstants.armfastKP, ArmConstants.armfastKI, ArmConstants.armfastKD);
     
 
     addRequirements(armSub);
@@ -47,8 +47,7 @@ public class ArmPIDCommand extends Command {
 
     armSub.move(-speed);
 
-    SmartDashboard.putBoolean("Arm Tolerance Check", armPID.atSetpoint());
-    SmartDashboard.putNumber("Arm Tolerance", armPID.getPositionError());
+
   }
 
   // Called once the command ends or is interrupted.

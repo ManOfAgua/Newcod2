@@ -57,7 +57,10 @@ public class Constants {
                 public static final int leftarmID = 9, rightarmID = 8;
 
                 public static double armSpd = 0.40,
-                                armKP = 0.01, armKI = 0.001, armKD = 0.0001,
+                                armKP = 0.03, armKI = 0.001, armKD = 0.0001,
+
+                                armfastKP = 0.03, armfastKI = 0.004, armfastKD = 0.0001,
+
 
                                 kArmGearRatio = 36.66, kCountsPerRev = 2048,
                                 kArmScaleFactor = (360 / (243.316601563 / (kCountsPerRev * kArmGearRatio)));
@@ -91,9 +94,9 @@ public class Constants {
                                                                 inchesToMeters(7.75)),
                                                 new Rotation3d(0, degreesToRadians(0), degreesToRadians(0))),
                                 new Transform3d(
-                                                new Translation3d(inchesToMeters(7.678), inchesToMeters(12.333),
-                                                                inchesToMeters(10.619)),
-                                                new Rotation3d(degreesToRadians(-0.25), degreesToRadians(-25),
+                                                new Translation3d(inchesToMeters(21.5), inchesToMeters(8),
+                                                                inchesToMeters(10.5)),
+                                                new Rotation3d(degreesToRadians(0), degreesToRadians(30),
                                                                 degreesToRadians(0)))
                 };
 
@@ -105,7 +108,7 @@ public class Constants {
                  * Not appliable when multiple tags are
                  * in view in a single camera.
                  */
-                public static final double APRILTAG_AMBIGUITY_THRESHOLD = 0.2;
+                public static final double APRILTAG_AMBIGUITY_THRESHOLD = 0.35;
         }
 
         public static final SwerveDriveKinematics KINEMATICS = new SwerveDriveKinematics(

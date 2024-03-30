@@ -2,10 +2,10 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 1.28,
-      "y": 5.55
+      "x": 0.75,
+      "y": 4.56
     },
-    "rotation": 0
+    "rotation": -60.0
   },
   "command": {
     "type": "sequential",
@@ -43,7 +43,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Middle1"
+                  "pathName": "Source1"
                 }
               },
               {
@@ -55,7 +55,45 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "PickupMid"
+                  "name": "PickupSource"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Source2"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Raise Arm"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeShoot"
                 }
               }
             ]
@@ -64,6 +102,6 @@
       ]
     }
   },
-  "folder": null,
+  "folder": "Source",
   "choreoAuto": false
 }

@@ -4,41 +4,35 @@
 
 package frc.robot;
 
-import java.util.Map;
-
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.FollowPathCommand;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 
-import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PS5Controller;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ControllerConstants;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.commands.ArmPIDCommand;
+import frc.robot.commands.ArmPIDFastCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.ManualArmCommand;
-import frc.robot.commands.PhotonCommand;
+// import frc.robot.commands.PhotonCommand;
 import frc.robot.commands.ShooterCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Arm;
@@ -55,19 +49,11 @@ public class RobotContainer {
   private final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain; // My drivetrain
 
   /* Driver Buttons */
-  private final JoystickButton dr_sqr = new JoystickButton(driver, ControllerConstants.b_SQR);
   private final JoystickButton pointButton = new JoystickButton(driver, ControllerConstants.b_X);
   private final JoystickButton brakeButton = new JoystickButton(driver, ControllerConstants.b_L2);
-  private final JoystickButton dr_o = new JoystickButton(driver, ControllerConstants.b_O);
-  private final JoystickButton dr_tri = new JoystickButton(driver, ControllerConstants.b_TRI);
   private final JoystickButton reseedButton = new JoystickButton(driver, ControllerConstants.b_L1);
   private final JoystickButton revintakeButton = new JoystickButton(driver, ControllerConstants.b_R1);
   private final JoystickButton intakeButton = new JoystickButton(driver, ControllerConstants.b_R2);
-
-  private final POVButton dr_0 = new POVButton(driver, 0);
-  private final POVButton dr_90 = new POVButton(driver, 90);
-  private final POVButton dr_180 = new POVButton(driver, 180);
-  private final POVButton dr_270 = new POVButton(driver, 270);
 
   /* Operator Buttons */
   private final JoystickButton armFwdButton = new JoystickButton(operator, ControllerConstants.b_L2);
@@ -75,27 +61,21 @@ public class RobotContainer {
   private final JoystickButton armspeakerCloseButton = new JoystickButton(operator, ControllerConstants.b_TRI);
   private final JoystickButton shootButton = new JoystickButton(operator, ControllerConstants.b_O);
   private final JoystickButton shootSlowButton = new JoystickButton(operator, ControllerConstants.b_SQR);
-  private final JoystickButton photonCommandButton = new JoystickButton(operator, ControllerConstants.b_X);
 
-  private final POVButton o_0 = new POVButton(operator, 0);
-  private final POVButton o_180 = new POVButton(operator, 180);
+  private final POVButton armPodiumButton = new POVButton(operator, 0);
 
   /* Subsystems */
   private final Arm armSub = new Arm(drivetrain);
   private final Shooter shooterSub = new Shooter();
   private final Intake intakeSub = new Intake();
 
-  private final ShuffleboardTab driverTab = Shuffleboard.getTab("Driver");
-  SendableChooser<Command> autoChooser = new SendableChooser<>();
-  private final Field2d field2d = new Field2d();
+  private final SendableChooser<Command> autoChooser;
 
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.15).withRotationalDeadband(MaxAngularRate * 0.15) // Add a 10% deadband
       .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric
                                                                // driving in open loop
   private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
-  private final SwerveRequest.RobotCentric forwardStraight = new SwerveRequest.RobotCentric()
-      .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
   private final Telemetry logger = new Telemetry(MaxSpeed);
 
@@ -130,7 +110,9 @@ public class RobotContainer {
     armBckButton.whileTrue(new ManualArmCommand(-ArmConstants.armSpd, armSub));
 
     armspeakerCloseButton.onTrue(new ArmPIDCommand(20, armSub));
-    // dr_sqr.onTrue(new PhotonCommand(armSub));
+    armPodiumButton.onTrue(new ArmPIDCommand(38, armSub));
+
+    // photonCommandButton.onTrue(new PhotonCommand(armSub));
 
     /* Sysid Commands */
     // o_TRI.and(o_0).whileTrue(armSub.runArmQuasiTest(Direction.kForward));
@@ -150,52 +132,45 @@ public class RobotContainer {
     }
     drivetrain.registerTelemetry(logger::telemeterize);
   }
-
+    //TODO: Experiment with adding velocity to goal end state.
+    //TODO: Reduce how far note intakes, only needs to intake a little bit.
+    //TODO: Change path for fourth note so it is more direct intake.
+    /*Note:
+     * Event markets run while robot follows path, does not pause for event markers. 
+     */
   public RobotContainer() {
+    NamedCommands.registerCommand("Lower Arm", new ArmPIDFastCommand(20, armSub));
+    NamedCommands.registerCommand("Raise Arm", new ArmPIDFastCommand(20, armSub));
+    NamedCommands.registerCommand("FourthNoteRaise", new ArmPIDFastCommand(35, armSub));
 
-    NamedCommands.registerCommand("Lower Arm", new ArmPIDCommand(20, armSub));
-    NamedCommands.registerCommand("Arm Levitate", new ArmPIDCommand(0, armSub));
-    NamedCommands.registerCommand("Arm Ground", new ArmPIDCommand(-15, armSub));
-    NamedCommands.registerCommand("Raise Arm", new ArmPIDCommand(20, armSub));
-    NamedCommands.registerCommand("FourthNoteRaise", new ArmPIDCommand(40, armSub));
+    NamedCommands.registerCommand("Arm Ground", new ArmPIDCommand(-15.5, armSub));
 
-    NamedCommands.registerCommand("IntakeShoot", intakeSub.intakeAuto(0.5).withTimeout(1));
+    NamedCommands.registerCommand("Shoot", shooterSub.shootAuto(0.8).withTimeout(0.85)); //1.2
+
+    NamedCommands.registerCommand("IntakeShoot", intakeSub.intakeAuto(0.5).withTimeout(0.85)); //1.1
     // Mid
-    NamedCommands.registerCommand("PickupMid", intakeSub.intakeAuto(0.2).withTimeout(1.6));
-    // Source
-    NamedCommands.registerCommand("PickupSource", intakeSub.intakeAuto(0.4).withTimeout(2.35));
+    NamedCommands.registerCommand("PickupMid", intakeSub.intakeAuto(0.2).withTimeout(1.8));
+    NamedCommands.registerCommand("PickupSource", intakeSub.intakeAuto(0.4).withTimeout(1.9));
+    NamedCommands.registerCommand("PickupAmp", intakeSub.intakeAuto(0.4).withTimeout(1.7));
     // Amp
-    NamedCommands.registerCommand("PickupAmp", intakeSub.intakeAuto(0.4).withTimeout(2.2));
-
-    NamedCommands.registerCommand("Shoot", shooterSub.shootAuto(0.8).withTimeout(1.5));
+    NamedCommands.registerCommand("Note1", intakeSub.intakeAuto(0.4).withTimeout(1.95));
+    NamedCommands.registerCommand("Note2", intakeSub.intakeAuto(0.4).withTimeout(3.83));
+    //Source
 
     configureBindings();
-    configureDashBoard();
 
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData(autoChooser);
+    FollowPathCommand.warmupCommand().schedule();
+
+    DataLogManager.start();
+    DriverStation.startDataLog(DataLogManager.getLog());
+
+
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(drivetrain::seedFieldRelative));
 
     RobotModeTriggers.teleop().onTrue(Commands.runOnce(drivetrain::seedFieldRelative));
     RobotModeTriggers.teleop().onTrue(Commands.runOnce(drivetrain::zeroGyroYaw));
-  }
-
-  private void configureDashBoard() {
-    driverTab.add("Auto", autoChooser).withPosition(0, 0).withSize(2, 1);
-
-    // Driver camera
-    driverTab.add(new HttpCamera("photonvision_Port_1184_Output_MJPEG_Server", "http://10.58.51.11:1184"))
-        .withWidget(BuiltInWidgets.kCameraStream)
-        .withProperties(Map.of("showCrosshair", true, "showControls", false))
-        .withSize(4, 5).withPosition(2, 0);
-
-    driverTab.add(field2d).withPosition(7, 0).withSize(4, 2).withPosition(7, 0);
-    driverTab.addString("Pose", () -> {
-      var pose = drivetrain.getState().Pose;
-      field2d.setRobotPose(pose);
-      return String.format("(%.3f, %.3f) %.2f deg",
-          pose.getX(), pose.getY(), pose.getRotation().getDegrees());
-    }).withSize(2, 1).withPosition(7, 2);
   }
 
   public Command getAutonomousCommand() {

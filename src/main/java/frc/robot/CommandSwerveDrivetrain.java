@@ -30,6 +30,7 @@ import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -52,8 +53,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     private final SwerveRequest.ApplyChassisSpeeds autoRequest = new SwerveRequest.ApplyChassisSpeeds();
     Pigeon2 gyro = new Pigeon2(IDConstants.gyro);
 
-    private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, ROBOT_TO_CAMERA_TRANSFORMS,
-            this::addVisionMeasurement, () -> getState().Pose));
+    // private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, ROBOT_TO_CAMERA_TRANSFORMS,
+    //         this::addVisionMeasurement, () -> getState().Pose));
 
     private PIDConstants drivePID = new PIDConstants(AutonConstants.drivekP, AutonConstants.drivekI,
             AutonConstants.drivekD);
@@ -69,9 +70,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         azimuthLimit();
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyroYaw();
-        photonThread.setName("PhotonVision");
-        photonThread.setDaemon(true);
-        photonThread.start();
+        // photonThread.setName("PhotonVision");
+        // photonThread.setDaemon(true);
+        // photonThread.start();
 
         if (Utils.isSimulation()) {
             startSimThread();
@@ -86,9 +87,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         azimuthLimit();
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         zeroGyroYaw();
-        photonThread.setName("PhotonVision");
-        photonThread.setDaemon(true);
-        photonThread.start();
+        // photonThread.setName("PhotonVision");
+        // photonThread.setDaemon(true);
+        // photonThread.start();
 
         if (Utils.isSimulation()) {
             startSimThread();
@@ -100,7 +101,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         for (var moduleLocation : m_moduleLocations) {
             driveBaseRadius = Math.max(driveBaseRadius, moduleLocation.getNorm());
         }
-
         AutoBuilder.configureHolonomic(
                 () -> this.getState().Pose, // Supplier of current robot pose
                 this::seedFieldRelative, // Consumer for seeding pose against auto
@@ -113,8 +113,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                         TunerConstants.kSpeedAt12VoltsMps,
                         driveBaseRadius,
                         new ReplanningConfig()),
-                () -> DriverStation.getAlliance().map(alliance -> alliance == DriverStation.Alliance.Red).orElse(false),
-                this); // Subsystem for requirements
+                        () -> DriverStation.getAlliance().map(alliance -> alliance == DriverStation.Alliance.Red).orElse(false),
+                        this); // Subsystem for requirements
     }
 
     public ChassisSpeeds getCurrentRobotChassisSpeeds() {

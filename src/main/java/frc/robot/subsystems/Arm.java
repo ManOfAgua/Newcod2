@@ -4,25 +4,12 @@
 
 package frc.robot.subsystems;
 
-import java.util.Optional;
-
 import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
-import org.photonvision.targeting.PhotonPipelineResult;
-import org.photonvision.targeting.PhotonTrackedTarget;
-
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.CommandSwerveDrivetrain;
 import frc.robot.Constants.ArmConstants;
@@ -33,13 +20,13 @@ public class Arm extends SubsystemBase {
   PhotonCamera photonCamera = new PhotonCamera("PhotonCamera");
   Follower follower = new Follower(ArmConstants.leftarmID, true);
   CommandSwerveDrivetrain m_driveTrain;
-  private final double camera_Height = Units.inchesToMeters(10);
-  private final double target_Height = Units.inchesToMeters(56.125); // Distance from floor to the middle of april tag
-  private AprilTagFieldLayout aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
-    private final ShuffleboardTab driverTab = Shuffleboard.getTab("Driver");
+  // private final double camera_Height = Units.inchesToMeters(10);
+  // private final double target_Height = Units.inchesToMeters(56.125); // Distance from floor to the middle of april tag
+  // private AprilTagFieldLayout aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+  //   private final ShuffleboardTab driverTab = Shuffleboard.getTab("Driver");
 
 
-  private final double vertoffSet = Units.inchesToMeters(24.3125); // 80.4375 height of middle of speaker opening..
+  // private final double vertoffSet = Units.inchesToMeters(24.3125); // 80.4375 height of middle of speaker opening..
                                                                    // 80.4375-56.125=24.3125
 
   public Arm(CommandSwerveDrivetrain driveTrain) {
@@ -47,7 +34,7 @@ public class Arm extends SubsystemBase {
     currentlimit();
     this.m_driveTrain = driveTrain;
     rightArm.setControl(follower);
-    this.aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+    // this.aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
   }
 
   public void move(double speed) {
@@ -85,24 +72,25 @@ public class Arm extends SubsystemBase {
     rightArm.setNeutralMode(NeutralModeValue.Brake);
   }
 
-  public double calculateAngle() {
-    var result = photonCamera.getLatestResult();
-    PhotonTrackedTarget target = result.getBestTarget();
+  // public double calculateAngle() {
+  //   var result = photonCamera.getLatestResult();
+  //   PhotonTrackedTarget target = result.getBestTarget();
 
-    if (target == null) {
-      return armTickToDegrees();
-    }
+  //   if (target == null) {
+  //     return armTickToDegrees();
+  //   }
 
-    int targetID = target.getFiducialId();
-    if (targetID == 7 || targetID == 4) {
-      double horizontal = PhotonUtils.getDistanceToPose(m_driveTrain.getState().Pose,
-          aprilTagLayout.getTagPose(targetID).get().toPose2d());
+  //   int targetID = target.getFiducialId();
+  //   if (targetID == 7 || targetID == 4) {
+  //     double horizontal = PhotonUtils.getDistanceToPose(m_driveTrain.getState().Pose,
+  //         aprilTagLayout.getTagPose(targetID).get().toPose2d());
 
-      double angle = Math.atan(((target_Height - camera_Height) + (vertoffSet)) / (horizontal));
-      return Units.radiansToDegrees(angle);
-    }
-    return armTickToDegrees();
-  }
+  //     double angle = Math.atan(((target_Height - camera_Height) + (vertoffSet)) / (horizontal));
+  //     return Units.radiansToDegrees(angle);
+  //   }
+  //   return armTickToDegrees();
+  // }
+
 
   // private SysIdRoutine m_armSysIdRoutine = new SysIdRoutine(
   // new SysIdRoutine.Config(null, null, null,
@@ -124,7 +112,7 @@ public class Arm extends SubsystemBase {
   public void periodic() {
 
     SmartDashboard.putNumber("Arm Angle", armTickToDegrees());
-    SmartDashboard.putNumber("Calculated Arm Angle", calculateAngle());
+    // SmartDashboard.putNumber("Calculated Arm Angle", calculateAngle());
 
     // SmartDashboard.putNumber("Photon Angle", calculateAngle());
 
