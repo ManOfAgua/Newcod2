@@ -21,6 +21,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -61,8 +63,12 @@ public class RobotContainer {
   private final JoystickButton armspeakerCloseButton = new JoystickButton(operator, ControllerConstants.b_TRI);
   private final JoystickButton shootButton = new JoystickButton(operator, ControllerConstants.b_O);
   private final JoystickButton shootSlowButton = new JoystickButton(operator, ControllerConstants.b_SQR);
+  private final JoystickButton passButton = new JoystickButton(operator, ControllerConstants.b_X);
+  private final JoystickButton groundButton = new JoystickButton(operator, ControllerConstants.b_R1);
+  private final JoystickButton ampButton = new JoystickButton(operator, ControllerConstants.b_L1);
 
   private final POVButton armPodiumButton = new POVButton(operator, 0);
+  private final POVButton armPassButton = new POVButton(operator, 90);
 
   /* Subsystems */
   private final Arm armSub = new Arm(drivetrain);
@@ -105,12 +111,22 @@ public class RobotContainer {
     /* Operator Commands */
     shootButton.whileTrue(new ShooterCommand(ShooterConstants.shooterSpd, shooterSub));
     shootSlowButton.whileTrue(new ShooterCommand(ShooterConstants.shooterSlwSpd, shooterSub));
+    passButton.whileTrue(new ShooterCommand(50, shooterSub));
 
     armFwdButton.whileTrue(new ManualArmCommand(ArmConstants.armSpd, armSub));
     armBckButton.whileTrue(new ManualArmCommand(-ArmConstants.armSpd, armSub));
 
     armspeakerCloseButton.onTrue(new ArmPIDCommand(20, armSub));
     armPodiumButton.onTrue(new ArmPIDCommand(38, armSub));
+    ampButton.onTrue(new ArmPIDCommand(70, armSub));
+    groundButton.onTrue(new ArmPIDCommand(10, armSub));
+
+    // TODO: Test
+    armPassButton.onTrue(new SequentialCommandGroup(
+        new ArmPIDCommand(50, armSub),
+        new ParallelCommandGroup(
+            new ShooterCommand(50, shooterSub).withTimeout(2),
+            new IntakeCommand(IntakeConstants.intakeSpd, intakeSub).withTimeout(2))));
 
     // photonCommandButton.onTrue(new PhotonCommand(armSub));
 
@@ -132,22 +148,24 @@ public class RobotContainer {
     }
     drivetrain.registerTelemetry(logger::telemeterize);
   }
-    //TODO: Experiment with adding velocity to goal end state.
-    //TODO: Reduce how far note intakes, only needs to intake a little bit.
-    //TODO: Change path for fourth note so it is more direct intake.
-    /*Note:
-     * Event markets run while robot follows path, does not pause for event markers. 
-     */
+
+  // TODO: Experiment with adding velocity to goal end state.
+  // TODO: Reduce how far note intakes, only needs to intake a little bit.
+  // TODO: Change path for fourth note so it is more direct intake.
+  /*
+   * Note:
+   * Event markets run while robot follows path, does not pause for event markers.
+   */
   public RobotContainer() {
     NamedCommands.registerCommand("Lower Arm", new ArmPIDFastCommand(20, armSub));
     NamedCommands.registerCommand("Raise Arm", new ArmPIDFastCommand(20, armSub));
-    NamedCommands.registerCommand("FourthNoteRaise", new ArmPIDFastCommand(35, armSub));
+    NamedCommands.registerCommand("FourthNoteRaise", new ArmPIDFastCommand(38, armSub));
 
-    NamedCommands.registerCommand("Arm Ground", new ArmPIDCommand(-15.5, armSub));
+    NamedCommands.registerCommand("Arm Ground", new ArmPIDCommand(-15, armSub)); // TODO: Verify this
 
-    NamedCommands.registerCommand("Shoot", shooterSub.shootAuto(0.8).withTimeout(0.85)); //1.2
+    NamedCommands.registerCommand("Shoot", shooterSub.shootAuto(0.8).withTimeout(0.85)); // 1.2
 
-    NamedCommands.registerCommand("IntakeShoot", intakeSub.intakeAuto(0.5).withTimeout(0.85)); //1.1
+    NamedCommands.registerCommand("IntakeShoot", intakeSub.intakeAuto(0.5).withTimeout(0.85)); // 1.1
     // Mid
     NamedCommands.registerCommand("PickupMid", intakeSub.intakeAuto(0.2).withTimeout(1.8));
     NamedCommands.registerCommand("PickupSource", intakeSub.intakeAuto(0.4).withTimeout(1.9));
@@ -155,7 +173,7 @@ public class RobotContainer {
     // Amp
     NamedCommands.registerCommand("Note1", intakeSub.intakeAuto(0.4).withTimeout(1.95));
     NamedCommands.registerCommand("Note2", intakeSub.intakeAuto(0.4).withTimeout(3.83));
-    //Source
+    // Source
 
     configureBindings();
 
@@ -163,9 +181,8 @@ public class RobotContainer {
     SmartDashboard.putData(autoChooser);
     FollowPathCommand.warmupCommand().schedule();
 
-    DataLogManager.start();
-    DriverStation.startDataLog(DataLogManager.getLog());
-
+    // DataLogManager.start();
+    // DriverStation.startDataLog(DataLogManager.getLog());
 
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(drivetrain::seedFieldRelative));
 

@@ -4,7 +4,6 @@
 
 package frc.robot.subsystems;
 
-import org.photonvision.PhotonCamera;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -17,9 +16,7 @@ import frc.robot.Constants.ArmConstants;
 public class Arm extends SubsystemBase {
   TalonFX leftArm = new TalonFX(ArmConstants.leftarmID);
   TalonFX rightArm = new TalonFX(ArmConstants.rightarmID);
-  PhotonCamera photonCamera = new PhotonCamera("PhotonCamera");
   Follower follower = new Follower(ArmConstants.leftarmID, true);
-  CommandSwerveDrivetrain m_driveTrain;
   // private final double camera_Height = Units.inchesToMeters(10);
   // private final double target_Height = Units.inchesToMeters(56.125); // Distance from floor to the middle of april tag
   // private AprilTagFieldLayout aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
@@ -32,7 +29,6 @@ public class Arm extends SubsystemBase {
   public Arm(CommandSwerveDrivetrain driveTrain) {
     brakeMode();
     currentlimit();
-    this.m_driveTrain = driveTrain;
     rightArm.setControl(follower);
     // this.aprilTagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
   }

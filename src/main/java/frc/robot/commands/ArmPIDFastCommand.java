@@ -34,26 +34,24 @@ public class ArmPIDFastCommand extends Command {
     armPID.setSetpoint(goal);
     armPID.reset();
     // System.out.println("\n\nArm PID Command Has Started\n\n");
-    armPID.setTolerance(0.25);
+    armPID.setTolerance(0.5);
   }
 
   // Called every time the scheduler runs while the command is scheduled.
 
   @Override
   public void execute() {
-    done = armPID.atSetpoint();
-
     double speed = armPID.calculate(armSub.armTickToDegrees(), goal);
+        done = armPID.atSetpoint();
+
 
     armSub.move(-speed);
-
-
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    // System.out.println("\n\n\n\n Arm Command Has Finish \n\n\n\n\n");
+    System.out.println("\n\n\n\n Arm Command Has Finish \n\n\n\n\n");
     armSub.move(0);
   }
 
